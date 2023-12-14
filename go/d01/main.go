@@ -71,21 +71,36 @@ func run(lines [][]byte) (p1Sum int, p2Sum int) {
 
 func runP1(lines [][]byte) (sum int) {
 	var n1, n2 int
-	for _, line := range lines {
-		n1 = p1GetFirstNum(line)
-		n2 = p1GetReverseNum(line)
+	for i := range lines {
+		n1 = p1GetFirstNum(lines[i])
+		n2 = p1GetReverseNum(lines[i])
 		sum += n1*10 + n2
 	}
 	return
 }
 
 func runP2(lines [][]byte) (sum int) {
-	var n1, n2 int
-	for _, line := range lines {
-		n1 = p2(line)
-		n2 = p2Rev(line)
-		sum += n1*10 + n2
-	}
+	c1 := make(chan int)
+	c2 := make(chan int)
+	go func() {
+		var n1sum = 0
+		for i := range lines {
+			n1sum += 10 * p2(lines[i])
+		}
+		c1 <- n1sum
+	}()
+
+	go func() {
+		var n2sum = 0
+		for i := range lines {
+			n2sum += p2Rev(lines[i])
+		}
+		c2 <- n2sum
+	}()
+
+	sum += <-c1
+	sum += <-c2
+
 	return
 }
 
@@ -127,7 +142,7 @@ func p2(line []byte) int {
 					return j + 1
 				}
 
-				if len(words[j]) <= int(count) || line[i] != words[j][count] {
+				if line[i] != words[j][count] || len(words[j]) <= int(count) {
 					state &= ^(0b1111 << shift)
 				} else {
 					state += 0b10 << shift
@@ -169,7 +184,7 @@ func p2Rev(line []byte) int {
 					return j + 1
 				}
 
-				if len(wordsRev[j]) <= int(count) || line[i] != wordsRev[j][count] {
+				if line[i] != wordsRev[j][count] || len(wordsRev[j]) <= int(count) {
 					state &= ^(0b1111 << shift)
 				} else {
 					state += 0b10 << shift
