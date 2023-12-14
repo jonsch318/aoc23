@@ -2,15 +2,48 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"log"
 	"os"
-	"strconv"
-	"unicode"
+	"runtime/pprof"
+	"time"
 )
 
 const INPUT = "/home/jonas/src/aoc23/input/d01/input"
 
+var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
+
 func main() {
+	flag.Parse()
+	if *cpuprofile != "" {
+		f, err := os.Create(*cpuprofile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		pprof.StartCPUProfile(f)
+		defer pprof.StopCPUProfile()
+	}
+	mainArgs(true)
+}
+
+func mainArgs(print bool) {
+	start := time.Now()
+	lines := setup()
+
+	var p1Sum, p2Sum int
+	//for i := 0; i < 100000; i++ {
+	p1Sum, p2Sum = run(lines)
+	//}
+
+	elapsed := time.Since(start)
+	if print {
+		log.Printf("Part 1: %d", p1Sum)
+		log.Printf("Part 2: %d", p2Sum)
+		log.Printf("%v ms | %v ns", elapsed.Milliseconds(), elapsed.Nanoseconds())
+	}
+}
+
+func setup() [][]byte {
 	file, err := os.Open(INPUT)
 	if err != nil {
 		panic(err)
@@ -19,81 +52,87 @@ func main() {
 
 	scanner := bufio.NewScanner(file)
 
-	p1Sum := 0
-	p2Sum := 0
-
+	lines := make([][]byte, 0)
 	for scanner.Scan() {
-		line := scanner.Text()
-		p1n1, _ := p1GetFirstNum(line)
-		p1n2, _ := p1GetReverseNum([]rune(line))
-		p2n1 := p2([]byte(line))
-		p2n2 := p2Rev([]byte(line))
-		p1Sum += p1n1*10 + p1n2
-		p2Sum += p2n1*10 + p2n2
+		lines = append(lines, []byte(scanner.Text()))
 	}
-	log.Printf("Part 1: %d", p1Sum)
-	log.Printf("Part 2: %d", p2Sum)
-
 	if err := scanner.Err(); err != nil {
 		panic(err)
 	}
 
+	return lines
 }
 
-func p1GetReverseNum(line []rune) (int, error) {
+func run(lines [][]byte) (p1Sum int, p2Sum int) {
+	p1Sum = runP1(lines)
+	p2Sum = runP2(lines)
+	return
+}
+
+func runP1(lines [][]byte) (sum int) {
+	var n1, n2 int
+	for _, line := range lines {
+		n1 = p1GetFirstNum(line)
+		n2 = p1GetReverseNum(line)
+		sum += n1*10 + n2
+	}
+	return
+}
+
+func runP2(lines [][]byte) (sum int) {
+	var n1, n2 int
+	for _, line := range lines {
+		n1 = p2(line)
+		n2 = p2Rev(line)
+		sum += n1*10 + n2
+	}
+	return
+}
+
+func p1GetReverseNum(line []byte) int {
 	for i := len(line) - 1; i >= 0; i-- {
-		if unicode.IsDigit(line[i]) {
-			return strconv.Atoi(string(line[i]))
+		if line[i] >= 48 && line[i] <= 57 {
+			return int(line[i] - 48)
 		}
 	}
-	return 0, nil
+	return 0
 }
 
-func p1GetFirstNum(line string) (int, error) {
-	for _, char := range line {
-		if unicode.IsDigit(char) {
-			return strconv.Atoi(string(char))
+func p1GetFirstNum(line []byte) int {
+	for i := range line {
+		if line[i] >= 48 && line[i] <= 57 {
+			return int(line[i] - 48)
 		}
 	}
-	return 0, nil
+	return 0
 }
 
 var words = [9]string{"one", "two", "three", "four", "five", "six", "seven", "eight", "nine"}
 var wordsRev = [9]string{"eno", "owt", "eerht", "ruof", "evif", "xis", "neves", "thgie", "enin"}
 
-func stateMachine(line []byte, state uint64, i int, words [9]string) (int, uint64) {
-	if unicode.IsDigit(rune(line[i])) {
-		res, _ := strconv.Atoi(string(line[i]))
-		return res, state
-	}
-
-	for j := 0; j < 9; j++ {
-		if (state>>(j*4))&0b1 == 1 {
-			count := ((state >> ((j * 4) + 1)) & 0b111) + 1
-			// fmt.Printf("%d: Count %d", j, int(count))
-
-			if len(words[j])-1 == int(count) && line[i] == words[j][count] {
-				return j + 1, state
-			}
-
-			if len(words[j]) <= int(count) || line[i] != words[j][count] {
-				state &= ^(0b1111 << (j * 4))
-			} else {
-				state += 0b10 << (j * 4)
-			}
-		}
-	}
-
-	return -1, state
-}
-
 func p2(line []byte) int {
 	state := uint64(0)
-	res := -1
+
 	for i := 0; i < len(line); i++ {
-		res, state = stateMachine(line, state, i, words)
-		if res != -1 {
-			return res
+		if line[i] >= 48 && line[i] <= 57 {
+			return int(line[i] - 48)
+		}
+
+		for j := 0; j < 9; j++ {
+			shift := j << 2 //j * 4
+			if (state & (1 << shift)) != 0 {
+				count := ((state >> (shift + 1)) & 0b111) + 1
+
+				if len(words[j])-1 == int(count) && line[i] == words[j][count] {
+					return j + 1
+				}
+
+				if len(words[j]) <= int(count) || line[i] != words[j][count] {
+					state &= ^(0b1111 << shift)
+				} else {
+					state += 0b10 << shift
+				}
+			}
 		}
 
 		switch line[i] {
@@ -116,11 +155,26 @@ func p2(line []byte) int {
 
 func p2Rev(line []byte) int {
 	state := uint64(0)
-	res := -1
 	for i := len(line) - 1; i >= 0; i-- {
-		res, state = stateMachine(line, state, i, wordsRev)
-		if res != -1 {
-			return res
+		if line[i] >= 48 && line[i] <= 57 {
+			return int(line[i] - 48)
+		}
+
+		for j := 0; j < 9; j++ {
+			shift := j << 2 //j * 4
+			if (state & (1 << shift)) != 0 {
+				count := ((state >> (shift + 1)) & 0b111) + 1
+
+				if len(wordsRev[j])-1 == int(count) && line[i] == wordsRev[j][count] {
+					return j + 1
+				}
+
+				if len(wordsRev[j]) <= int(count) || line[i] != wordsRev[j][count] {
+					state &= ^(0b1111 << shift)
+				} else {
+					state += 0b10 << shift
+				}
+			}
 		}
 
 		switch line[i] {

@@ -50,3 +50,7 @@ aoc23-*.tar
 /tmp/
 
 input/
+
+*.prof
+
+build
