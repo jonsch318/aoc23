@@ -1,6 +1,10 @@
 package main
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/jonsch318/aoc23/go/d18/solve"
+)
 
 const ABS_INPUT = "/home/jonas/src/aoc23/input/d18/input"
 
@@ -10,7 +14,7 @@ func BenchmarkP1(b *testing.B) {
 	b.ResetTimer()
 	var res int64
 	for n := 0; n < b.N; n++ {
-		res = solve(lines)
+		res = solve.Solve(lines)
 	}
 
 	if res != check {
@@ -24,7 +28,7 @@ func BenchmarkP2(b *testing.B) {
 	var res int64
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		res = solve(lines)
+		res = solve.Solve(lines)
 	}
 	if res != check {
 		b.Fail()

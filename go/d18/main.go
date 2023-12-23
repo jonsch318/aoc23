@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+
+	"github.com/jonsch318/aoc23/go/d18/solve"
 )
 
 const INPUT = "input/d18/input"
@@ -20,15 +22,6 @@ const (
 	dirU byte = iota
 )
 
-type CMD struct {
-	len int
-	dir byte
-}
-
-func (c CMD) String() string {
-	return fmt.Sprintf("(%d, %d)", c.dir, c.len)
-}
-
 func main() {
 
 	commands := setup(INPUT, readP2)
@@ -36,11 +29,11 @@ func main() {
 		log.Println(c)
 	} */
 
-	area := solve(commands)
+	area := solve.Solve(commands)
 	log.Printf("Area %v", area)
 }
 
-func readP1(file *os.File) (int, CMD) {
+func readP1(file *os.File) (int, solve.CMD) {
 
 	var l, len int
 	var d rune
@@ -48,45 +41,45 @@ func readP1(file *os.File) (int, CMD) {
 	_, err := fmt.Fscanf(file, "%c %d (#%x)\n", &d, &len, &l)
 
 	if err != nil {
-		return 0, CMD{}
+		return 0, solve.CMD{}
 	}
 
 	switch d {
 	case 'R':
-		return 1, CMD{dir: dirR, len: len}
+		return 1, solve.CMD{Dir: dirR, Len: len}
 	case 'L':
-		return 1, CMD{dir: dirL, len: len}
+		return 1, solve.CMD{Dir: dirL, Len: len}
 	case 'U':
-		return 1, CMD{dir: dirU, len: len}
+		return 1, solve.CMD{Dir: dirU, Len: len}
 	case 'D':
-		return 1, CMD{dir: dirD, len: len}
+		return 1, solve.CMD{Dir: dirD, Len: len}
 	}
-	return 0, CMD{}
+	return 0, solve.CMD{}
 }
 
-func readP2(file *os.File) (int, CMD) {
-	var cmd CMD
+func readP2(file *os.File) (int, solve.CMD) {
+	var cmd solve.CMD
 	var l int
 
-	_, err := fmt.Fscanf(file, "%c %d (#%x)\n", &cmd.dir, &l, &cmd.len)
+	_, err := fmt.Fscanf(file, "%c %d (#%x)\n", &cmd.Dir, &l, &cmd.Len)
 
 	if err != nil {
-		return 0, CMD{}
+		return 0, solve.CMD{}
 	}
 
-	cmd.dir = byte(cmd.len & 3)
-	cmd.len = cmd.len >> 4
+	cmd.Dir = byte(cmd.Len & 3)
+	cmd.Len = cmd.Len >> 4
 	return 1, cmd
 }
 
-func setup(path string, read func(*os.File) (int, CMD)) []CMD {
+func setup(path string, read func(*os.File) (int, solve.CMD)) []solve.CMD {
 	file, err := os.Open(path)
 	if err != nil {
 		panic(err)
 	}
 	defer file.Close()
 
-	commands := make([]CMD, 0, 1000)
+	commands := make([]solve.CMD, 0, 1000)
 
 	for {
 		ret, cmd := read(file)
@@ -98,55 +91,4 @@ func setup(path string, read func(*os.File) (int, CMD)) []CMD {
 	}
 
 	return commands
-}
-
-func toInt(a bool) int {
-	if a {
-		return 1
-	}
-	return 0
-}
-
-func solve(commands []CMD) int64 {
-	curDir := commands[0].dir
-	var nextDir byte
-
-	curLen := commands[0].len
-	nextLen := 0
-
-	y := 0
-	area := int64(0)
-	clockwise := true
-
-	for i := 1; i < len(commands); i++ {
-		nextDir = commands[i].dir
-		nextLen = commands[i].len
-
-		nextClockwise := nextDir == ((curDir + 1) & 0b11)
-		curLen += toInt(nextClockwise) + toInt(clockwise) - 1
-		if curDir&1 != 0 {
-			// up or down
-			if curDir < 2 {
-				//down
-				y += curLen
-			} else {
-				//up
-				y -= curLen
-			}
-		} else {
-			// left or right
-			if curDir > 1 {
-				// left
-				area += int64(curLen) * int64(y)
-			} else {
-				//right
-				area += int64(-curLen) * int64(y)
-			}
-		}
-		clockwise = nextClockwise
-		curDir = nextDir
-		curLen = nextLen
-	}
-
-	return area
 }
