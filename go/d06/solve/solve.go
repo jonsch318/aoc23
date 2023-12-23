@@ -2,19 +2,17 @@ package solve
 
 import (
 	"math"
-	"unsafe"
 )
 
 //go:noescape
 func SolveAVX(times [4]float32, distances [4]float32) [4]float32
 
 //go:noescape
-func SolveAVX2(times, distances unsafe.Pointer) float32
+func SolveAVX2(times [4]float64, distances [4]float64) [4]float64
 
-func SolveScalar(time, distance float32) float32 {
-	pT, pD := float64(time), float64(distance)
-	timeHalf := pT * 0.5
-	x1 := math.Ceil(timeHalf - math.Sqrt(math.Pow(timeHalf, 2)-pD))
-	x2 := math.Floor(timeHalf + math.Sqrt(math.Pow(timeHalf, 2)-pD))
-	return float32(x2 - x1 + 1)
+func SolveScalar(time, distance float64) float64 {
+	timeHalf := time * 0.5
+	x1 := math.Ceil(timeHalf - math.Sqrt(math.Pow(timeHalf, 2)-distance))
+	x2 := math.Floor(timeHalf + math.Sqrt(math.Pow(timeHalf, 2)-distance))
+	return x2 - x1 + 1
 }

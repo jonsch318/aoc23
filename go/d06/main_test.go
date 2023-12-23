@@ -8,26 +8,40 @@ import (
 const TEST_PATH = "/home/jonas/src/aoc23/input/d06/test"
 const INPUT_PATH = "/home/jonas/src/aoc23/input/d06/input"
 
-func TestMain(t *testing.T) {
+func TestDefault(t *testing.T) {
 	switchImpl(Default)
-
 	check := int64(3316275)
-	td, length := setup(INPUT_PATH)
+	td, length := setup32(INPUT_PATH)
 	log.Printf("--- DEFAULT ---")
 	log.Printf("Input %v %v", length, td)
-	res := solveP1(td, length)
+	res := solve32(td, length)
 	if res != check {
 		log.Printf("%v != %v", res, check)
 		t.Fail()
 	}
 
-	switchImpl(AVX)
+}
 
-	check = int64(3316275)
-	td, length = setup(INPUT_PATH)
+func TestAVX(t *testing.T) {
+	switchImpl(AVX)
+	check := int64(3316275)
+	td, length := setup32(INPUT_PATH)
 	log.Printf("--- AVX ---")
 	log.Printf("Input %v %v", length, td)
-	res = solveP1(td, length)
+	res := solve32(td, length)
+	if res != check {
+		log.Printf("%v != %v", res, check)
+		t.Fail()
+	}
+}
+
+func TestAVX2(t *testing.T) {
+	switchImpl(AVX2)
+	check := int64(3316275)
+	td, length := setup64(INPUT_PATH)
+	log.Printf("--- AVX ---")
+	log.Printf("Input %v %v", length, td)
+	res := solve64(td, length)
 	if res != check {
 		log.Printf("%v != %v", res, check)
 		t.Fail()
@@ -37,12 +51,12 @@ func TestMain(t *testing.T) {
 func BenchmarkSolveP1AVX(b *testing.B) {
 	switchImpl(AVX)
 	check := int64(3316275)
-	td, length := setup(INPUT_PATH)
+	td, length := setup32(INPUT_PATH)
 
 	b.ResetTimer()
 	res := int64(0)
 	for i := 0; i < b.N; i++ {
-		res = solveP1(td, length)
+		res = solve32(td, length)
 	}
 	if res != check {
 		log.Printf("%v != %v", res, check)
@@ -51,15 +65,31 @@ func BenchmarkSolveP1AVX(b *testing.B) {
 
 }
 
-func BenchmarkSolveP1SCALAR(b *testing.B) {
-	switchImpl(Default)
+func BenchmarkSolveP1AVX2(b *testing.B) {
+	switchImpl(AVX2)
 	check := int64(3316275)
-	td, length := setup(INPUT_PATH)
+	td, length := setup64(INPUT_PATH)
 
 	b.ResetTimer()
 	res := int64(0)
 	for i := 0; i < b.N; i++ {
-		res = solveP1(td, length)
+		res = solve64(td, length)
+	}
+	if res != check {
+		log.Printf("%v != %v", res, check)
+		b.Fail()
+	}
+}
+
+func BenchmarkSolveP1SCALAR(b *testing.B) {
+	switchImpl(Default)
+	check := int64(3316275)
+	td, length := setup32(INPUT_PATH)
+
+	b.ResetTimer()
+	res := int64(0)
+	for i := 0; i < b.N; i++ {
+		res = solve32(td, length)
 	}
 	if res != check {
 		log.Printf("%v != %v", res, check)
